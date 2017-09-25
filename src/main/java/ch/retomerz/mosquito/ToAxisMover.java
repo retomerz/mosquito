@@ -13,6 +13,7 @@ final class ToAxisMover {
   private final OutputPort port;
   private int lastDistance = -1;
   private int duration = 10;
+  private boolean incrementing;
 
   ToAxisMover(final String name, final Ev3Executor exe, final OutputPort port) {
     this.name = name;
@@ -20,7 +21,11 @@ final class ToAxisMover {
     this.port = port;
   }
 
-  void move(final int distance, final boolean inversePower) {
+  boolean isIncrementing() {
+    return incrementing;
+  }
+
+  void move(final int distance) {
     if (distance < 10 && distance > -10) {
       return; // close enough
     }
@@ -42,10 +47,11 @@ final class ToAxisMover {
     }
     lastDistance = distance;
 
-    if (distance > 0) {
-      exe.turnMotorAtPowerForTime(port, inversePower ? 10 : -10, 0, duration, 0, false);
+    incrementing = distance > 0;
+    if (incrementing) {
+      exe.turnMotorAtPowerForTime(port, -10, 0, duration, 0, false);
     } else {
-      exe.turnMotorAtPowerForTime(port, inversePower ? -10 : 10, 0, duration, 0, false);
+      exe.turnMotorAtPowerForTime(port, 10, 0, duration, 0, false);
     }
   }
 }

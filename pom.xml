@@ -16,8 +16,8 @@
     <url>https://github.com/retomerz/mosquito</url>
 
     <issueManagement>
-            <url>https://github.com/retomerz/mosquito/issues</url>
-            <system>GitHub Issues</system>
+        <url>https://github.com/retomerz/mosquito/issues</url>
+        <system>GitHub Issues</system>
     </issueManagement>
 
     <properties>
@@ -66,6 +66,11 @@
             <groupId>org.hid4java</groupId>
             <artifactId>hid4java</artifactId>
             <version>0.5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerforge</groupId>
+            <artifactId>tinkerforge</artifactId>
+            <version>2.1.14</version>
         </dependency>
     </dependencies>
 

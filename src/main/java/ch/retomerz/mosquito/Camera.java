@@ -8,32 +8,31 @@ import org.bytedeco.javacv.FrameGrabber;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameGrabber;
 
-import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.util.concurrent.TimeUnit;
 
-public final class Camera {
+final class Camera {
 
   private final int width;
   private final int height;
   private volatile boolean close;
   private volatile boolean closed;
-  private volatile Image image;
+  private volatile BufferedImage image;
 
-  public Camera(int width, int height) {
+  private Camera(int width, int height) {
     this.width = width;
     this.height = height;
   }
 
-  public int getWidth() {
+  int getWidth() {
     return width;
   }
 
-  public int getHeight() {
+  int getHeight() {
     return height;
   }
 
-  public Image getImage() {
+  BufferedImage getImage() {
     return image;
   }
 
@@ -88,6 +87,4 @@ public final class Camera {
     }, "Camera").start();
     return ret;
   }
-
-
 }

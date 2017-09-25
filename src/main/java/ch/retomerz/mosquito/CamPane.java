@@ -26,7 +26,7 @@ public final class CamPane extends JPanel {
     this.camera = camera;
     setOpaque(true);
     setBackground(Color.white);
-    setPreferredSize(new Dimension(camera.getWidth(), camera.getHeight()));
+    setPreferredSize(new Dimension(camera.getWidth() / 2, camera.getHeight() / 2));
     addMouseListener(new MouseAdapter() {
       @Override
       public void mouseClicked(MouseEvent e) {
@@ -57,15 +57,15 @@ public final class CamPane extends JPanel {
 
     final Image image = camera.getImage();
     if (image != null) {
-      g.drawImage(image, 0, 0, null);
+      g.drawImage(image, 0, 0, getWidth(), getHeight(), null);
     }
 
     if (target != null) {
       final int radius = 4;
       g.setColor(Color.green);
       g.fillOval(
-              target.x - radius,
-              target.y - radius,
+              (target.x / 2) - radius,
+              (target.y / 2) - radius,
               radius * 2,
               radius * 2
       );
@@ -73,12 +73,12 @@ public final class CamPane extends JPanel {
 
     if (laser != null) {
       g.setColor(Color.blue);
-      g.fillRect(laser.x -5, laser.y -5, 10, 10);
+      g.fillRect((laser.x / 2) - 5, (laser.y / 2) - 5, 10, 10);
     }
 
     g.setColor(Color.red);
     for (final Point p : noise) {
-      g.fillRect(p.x, p.y, 1, 1);
+      g.fillRect((p.x / 2), (p.y / 2), 1, 1);
     }
 
     EventQueue.invokeLater(new Runnable() {

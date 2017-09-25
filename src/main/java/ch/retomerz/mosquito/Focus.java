@@ -13,22 +13,22 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.util.concurrent.TimeUnit;
 
-public final class Focus {
+final class Focus {
 
   private final CamPane camPane;
   private final Camera camera;
-  private final Ev3Executor exe;
+  private final Ev3Executor ev3Exe;
   private volatile boolean close;
   private volatile boolean closed;
   private Point latestLaser;
 
-  public Focus(CamPane camPane, Camera camera, Ev3Executor exe) {
+  Focus(CamPane camPane, Camera camera, Ev3Executor ev3Exe) {
     this.camPane = camPane;
     this.camera = camera;
-    this.exe = exe;
+    this.ev3Exe = ev3Exe;
   }
 
-  public void now(final Runnable onFinish) {
+  void now(final Runnable onFinish) {
     close = false;
     closed = false;
 
@@ -45,7 +45,7 @@ public final class Focus {
     }, "focus").start();
   }
 
-  public boolean close(final long timeout, final TimeUnit unit) {
+  boolean close(final long timeout, final TimeUnit unit) {
     close = true;
     final long startNs = System.nanoTime();
     while (!closed) {
@@ -71,8 +71,8 @@ public final class Focus {
       return;
     }
 
-    final ToAxisMover xMover = new ToAxisMover("X", exe, OutputPort.B);
-    final ToAxisMover yMover = new ToAxisMover("Y", exe, OutputPort.A);
+    final ToAxisMover xMover = new ToAxisMover("X", ev3Exe, OutputPort.B);
+    final ToAxisMover yMover = new ToAxisMover("Y", ev3Exe, OutputPort.A);
 
     while (!close) {
 
@@ -85,8 +85,8 @@ public final class Focus {
       final int distanceX = laser.x - target.x;
       final int distanceY = laser.y - target.y;
 
-      xMover.move(distanceX, false);
-      yMover.move(distanceY, false);
+      xMover.move(distanceX);
+      yMover.move(distanceY);
 
       try {
         Thread.sleep(50);
@@ -103,6 +103,7 @@ public final class Focus {
       final Point laser = findLaserImpl(laserThreshold);
       if (laser != null) {
         System.out.println("Laser found with threshold " + laserThreshold);
+        latestLaser = laser;
         return laser;
       }
 
@@ -120,15 +121,32 @@ public final class Focus {
     camPane.clearNoise();
 
     final Image image = camera.getImage();
-    if (!(image instanceof BufferedImage)) {
+    if (image == null) {
       return null;
     }
     final BufferedImage b = (BufferedImage) image;
+    final int width = image.getWidth(null);
+    final int height = image.getHeight(null);
+
+    return findLaserImpl(
+            threshold,
+            b,
+            width,
+            height
+    );
+  }
+
+  private Point findLaserImpl(
+          final int threshold,
+          final BufferedImage b,
+          final int width,
+          final int height
+  ) {
 
     int foundX = -1;
     int foundY = -1;
-    for (int y = 0; y < image.getHeight(null); y++) {
-      for (int x = 0; x < image.getWidth(null); x++) {
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
 
         final int rgb = b.getRGB(x, y);
         final Color c = new Color(rgb);
