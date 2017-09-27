@@ -3,12 +3,8 @@
  */
 package ch.retomerz.mosquito;
 
-import ch.retomerz.mosquito.ev3.Ev3Executor;
-import ch.retomerz.mosquito.ev3.Ev3Util;
-import ch.retomerz.mosquito.ev3.OutputPort;
-import org.hid4java.HidDevice;
-import org.hid4java.HidManager;
-import org.hid4java.HidServices;
+import ch.retomerz.mosquito.detect.DetectLaser;
+import ch.retomerz.mosquito.tf.TfExecutor;
 
 import javax.imageio.ImageIO;
 import javax.swing.JButton;
@@ -23,6 +19,7 @@ import javax.swing.event.ChangeListener;
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
 import java.awt.FlowLayout;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -32,8 +29,6 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 public final class Main {
-  private static final boolean USE_EV3 = false;
-
   public static void main(String[] args) {
     EventQueue.invokeLater(new Runnable() {
       @Override
@@ -49,27 +44,16 @@ public final class Main {
     final int height = 1080;
     final Camera camera = Camera.open(width, height, true);
 
-    final HidServices hidServices = HidManager.getHidServices();
-
-    final HidDevice ev3Device;
-    final Ev3Executor ev3Exe;
-    if (USE_EV3) {
-      ev3Device = Ev3Util.findEv3(hidServices);
-      ev3Device.open();
-      ev3Exe = new Ev3Executor(ev3Device);
-    } else {
-      ev3Device = null;
-      ev3Exe = null;
-    }
+    final TfExecutor tfExecutor = TfExecutor.create();
 
     final CamPane camPane = new CamPane(camera);
 
-    final Focus focus = new Focus(camPane, camera, ev3Exe);
+    final Focus focus = new Focus(camPane, camera, tfExecutor);
 
     final JPanel camCenterPane = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
     camCenterPane.add(camPane);
 
-    final JSlider slider = new JSlider(JSlider.HORIZONTAL, 0, 100, 10);
+    final JSlider slider = new JSlider(JSlider.HORIZONTAL, 50, 500, 400);
     slider.setPaintTicks(true);
     slider.setPaintTrack(true);
 
@@ -85,7 +69,7 @@ public final class Main {
     moveLeftButton.addActionListener(new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent e) {
-        ev3Exe.turnMotorAtPowerForTime(OutputPort.B, -10, 0, slider.getValue(), 0, false);
+        tfExecutor.moveX(slider.getValue() * -1);
       }
     });
 
@@ -93,7 +77,7 @@ public final class Main {
     moveRightButton.addActionListener(new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent e) {
-        ev3Exe.turnMotorAtPowerForTime(OutputPort.B, 10, 0, slider.getValue(), 0, false);
+        tfExecutor.moveX(slider.getValue());
       }
     });
 
@@ -101,7 +85,7 @@ public final class Main {
     moveUpButton.addActionListener(new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent e) {
-        ev3Exe.turnMotorAtPowerForTime(OutputPort.A, -10, 0, slider.getValue(), 0, false);
+        tfExecutor.moveY(slider.getValue());
       }
     });
 
@@ -109,7 +93,17 @@ public final class Main {
     moveDownButton.addActionListener(new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent e) {
-        ev3Exe.turnMotorAtPowerForTime(OutputPort.A, 10, 0, slider.getValue(), 0, false);
+        tfExecutor.moveY(slider.getValue() * -1);
+      }
+    });
+
+    final JButton findLaserButton = new JButton("find laser");
+    findLaserButton.addActionListener(new ActionListener() {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        final Point laser = new DetectLaser().detect(camera.getImage());
+        System.out.println("Found laser @ " + laser);
+        camPane.setLaser(laser);
       }
     });
 
@@ -176,6 +170,7 @@ public final class Main {
     buttonsPane.add(focusButton);
     buttonsPane.add(slider);
     buttonsPane.add(valueLabel);
+    buttonsPane.add(findLaserButton);
     buttonsPane.add(startDumpButton);
 
     final JPanel mainPane = new JPanel(new BorderLayout());
@@ -202,13 +197,7 @@ public final class Main {
             e.printStackTrace();
           }
         } finally {
-          try {
-            if (ev3Device != null) {
-              ev3Device.close();
-            }
-          } finally {
-            hidServices.shutdown();
-          }
+          tfExecutor.close();
         }
       }
     });

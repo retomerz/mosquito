@@ -73,7 +73,7 @@ final class Camera {
                       null
               );
               Thread.yield();
-              Thread.sleep(1000 / 60);
+              //Thread.sleep(1000 / 60);
             }
           } finally {
             grabber.close();

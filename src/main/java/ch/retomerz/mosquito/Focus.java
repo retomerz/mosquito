@@ -3,9 +3,9 @@
  */
 package ch.retomerz.mosquito;
 
-import ch.retomerz.mosquito.ev3.Ev3Executor;
-import ch.retomerz.mosquito.ev3.OutputPort;
+import ch.retomerz.mosquito.tf.TfExecutor;
 
+import javax.annotation.Nonnull;
 import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Image;
@@ -17,15 +17,15 @@ final class Focus {
 
   private final CamPane camPane;
   private final Camera camera;
-  private final Ev3Executor ev3Exe;
+  private final TfExecutor exe;
   private volatile boolean close;
   private volatile boolean closed;
   private Point latestLaser;
 
-  Focus(CamPane camPane, Camera camera, Ev3Executor ev3Exe) {
+  Focus(@Nonnull final CamPane camPane, @Nonnull final Camera camera, @Nonnull final TfExecutor exe) {
     this.camPane = camPane;
     this.camera = camera;
-    this.ev3Exe = ev3Exe;
+    this.exe = exe;
   }
 
   void now(final Runnable onFinish) {
@@ -71,8 +71,8 @@ final class Focus {
       return;
     }
 
-    final ToAxisMover xMover = new ToAxisMover("X", ev3Exe, OutputPort.B);
-    final ToAxisMover yMover = new ToAxisMover("Y", ev3Exe, OutputPort.A);
+    final ToAxisMover xMover = new ToAxisMover("X", exe, true);
+    final ToAxisMover yMover = new ToAxisMover("Y", exe, false);
 
     while (!close) {
 
@@ -89,7 +89,7 @@ final class Focus {
       yMover.move(distanceY);
 
       try {
-        Thread.sleep(50);
+        Thread.sleep(175);
       } catch (InterruptedException e) {
         e.printStackTrace();
       }

@@ -3,22 +3,20 @@
  */
 package ch.retomerz.mosquito;
 
-import ch.retomerz.mosquito.ev3.Ev3Executor;
-import ch.retomerz.mosquito.ev3.OutputPort;
+import ch.retomerz.mosquito.tf.TfExecutor;
 
 final class ToAxisMover {
 
   private final String name;
-  private final Ev3Executor exe;
-  private final OutputPort port;
-  private int lastDistance = -1;
-  private int duration = 10;
+  private final TfExecutor exe;
+  private final boolean x;
+  private int step = 500;
   private boolean incrementing;
 
-  ToAxisMover(final String name, final Ev3Executor exe, final OutputPort port) {
+  ToAxisMover(final String name, final TfExecutor exe, final boolean x) {
     this.name = name;
     this.exe = exe;
-    this.port = port;
+    this.x = x;
   }
 
   boolean isIncrementing() {
@@ -30,28 +28,14 @@ final class ToAxisMover {
       return; // close enough
     }
 
-    if (lastDistance != -1) {
-      final int difference = Math.abs(lastDistance - distance);
-
-      if (difference > 400) {
-        System.out.println("Skip because distance to big of " + name);
-      }
-
-      if (difference < 10) {
-        duration += 10;
-        System.out.println("Increment speed of " + name);
-      } else {
-        duration = 10;
-        System.out.println("Reset speed of " + name);
-      }
-    }
-    lastDistance = distance;
+    final int absDistance = Math.abs(distance);
+    step = absDistance * 2;
 
     incrementing = distance > 0;
     if (incrementing) {
-      exe.turnMotorAtPowerForTime(port, -10, 0, duration, 0, false);
+      exe.move(x, step * (x ? -1 : 1));
     } else {
-      exe.turnMotorAtPowerForTime(port, 10, 0, duration, 0, false);
+      exe.move(x, step * (x ? 1 : -1));
     }
   }
 }

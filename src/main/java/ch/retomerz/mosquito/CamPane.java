@@ -3,6 +3,7 @@
  */
 package ch.retomerz.mosquito;
 
+import javax.annotation.Nullable;
 import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -17,20 +18,25 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class CamPane extends JPanel {
 
+  private static final int SCALE = 2;
+
   private final Camera camera;
   private volatile Point target;
+
+  @Nullable
   private volatile Point laser;
+
   private final List<Point> noise = new CopyOnWriteArrayList<>();
 
   public CamPane(final Camera camera) {
     this.camera = camera;
     setOpaque(true);
     setBackground(Color.white);
-    setPreferredSize(new Dimension(camera.getWidth() / 2, camera.getHeight() / 2));
+    setPreferredSize(new Dimension(camera.getWidth() / SCALE, camera.getHeight() / SCALE));
     addMouseListener(new MouseAdapter() {
       @Override
       public void mouseClicked(MouseEvent e) {
-        target = new Point(e.getX(), e.getY());
+        target = new Point(e.getX() * SCALE, e.getY() * SCALE);
       }
     });
   }
@@ -39,7 +45,7 @@ public final class CamPane extends JPanel {
     return target;
   }
 
-  public void setLaser(final Point laser) {
+  public void setLaser(@Nullable final Point laser) {
     this.laser = laser;
   }
 
@@ -64,8 +70,8 @@ public final class CamPane extends JPanel {
       final int radius = 4;
       g.setColor(Color.green);
       g.fillOval(
-              (target.x / 2) - radius,
-              (target.y / 2) - radius,
+              (target.x / SCALE) - radius,
+              (target.y / SCALE) - radius,
               radius * 2,
               radius * 2
       );
@@ -73,12 +79,12 @@ public final class CamPane extends JPanel {
 
     if (laser != null) {
       g.setColor(Color.blue);
-      g.fillRect((laser.x / 2) - 5, (laser.y / 2) - 5, 10, 10);
+      g.fillRect((laser.x / SCALE) - 5, (laser.y / SCALE) - 5, 10, 10);
     }
 
     g.setColor(Color.red);
     for (final Point p : noise) {
-      g.fillRect((p.x / 2), (p.y / 2), 1, 1);
+      g.fillRect((p.x / SCALE), (p.y / SCALE), 1, 1);
     }
 
     EventQueue.invokeLater(new Runnable() {
