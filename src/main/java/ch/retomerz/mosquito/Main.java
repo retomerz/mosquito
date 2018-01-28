@@ -1,12 +1,17 @@
 /*
- * Copyright (c) 2017 Reto Merz
+ * Copyright (c) 2018 Reto Merz
  */
 package ch.retomerz.mosquito;
 
 import ch.retomerz.mosquito.detect.DetectLaser;
 import ch.retomerz.mosquito.tf.TfExecutor;
 
+import javax.annotation.Nonnull;
 import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -19,6 +24,7 @@ import javax.swing.event.ChangeListener;
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
 import java.awt.FlowLayout;
+import java.awt.GridLayout;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -65,38 +71,6 @@ public final class Main {
       }
     });
 
-    final JButton moveLeftButton = new JButton("<");
-    moveLeftButton.addActionListener(new ActionListener() {
-      @Override
-      public void actionPerformed(ActionEvent e) {
-        tfExecutor.moveX(slider.getValue() * -1);
-      }
-    });
-
-    final JButton moveRightButton = new JButton(">");
-    moveRightButton.addActionListener(new ActionListener() {
-      @Override
-      public void actionPerformed(ActionEvent e) {
-        tfExecutor.moveX(slider.getValue());
-      }
-    });
-
-    final JButton moveUpButton = new JButton("^");
-    moveUpButton.addActionListener(new ActionListener() {
-      @Override
-      public void actionPerformed(ActionEvent e) {
-        tfExecutor.moveY(slider.getValue());
-      }
-    });
-
-    final JButton moveDownButton = new JButton("v");
-    moveDownButton.addActionListener(new ActionListener() {
-      @Override
-      public void actionPerformed(ActionEvent e) {
-        tfExecutor.moveY(slider.getValue() * -1);
-      }
-    });
-
     final JButton findLaserButton = new JButton("find laser");
     findLaserButton.addActionListener(new ActionListener() {
       @Override
@@ -133,16 +107,43 @@ public final class Main {
       }
     });
 
-    final JButton focusButton = new JButton("start focus");
-    focusButton.addActionListener(new ActionListener() {
+    final JPanel moveButtonsPane = new JPanel(new GridLayout(3, 3));
+
+    moveButtonsPane.add(Box.createGlue());
+    moveButtonsPane.add(createButton("arrow-up.png", e -> tfExecutor.moveY(slider.getValue())));
+    moveButtonsPane.add(Box.createGlue());
+
+    moveButtonsPane.add(createButton("arrow-left.png", e -> tfExecutor.moveX(slider.getValue() * -1)));
+    moveButtonsPane.add(createButton("center.png", e -> tfExecutor.center()));
+    moveButtonsPane.add(createButton("arrow-right.png", e -> tfExecutor.moveX(slider.getValue())));
+
+    moveButtonsPane.add(Box.createGlue());
+    moveButtonsPane.add(createButton("arrow-down.png", e -> tfExecutor.moveY(slider.getValue() * -1)));
+    moveButtonsPane.add(Box.createGlue());
+
+    final Icon laserOff = createIcon("laser-off.png");
+    final Icon laserOn = createIcon("laser-on.png");
+    final JButton laserButton = createButton(tfExecutor.getLaserState() ? laserOn : laserOff, new ActionListener() {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        final JButton laserButton = (JButton) e.getSource();
+        tfExecutor.toggleLaserState();
+        laserButton.setIcon(tfExecutor.getLaserState() ? laserOn : laserOff);
+      }
+    });
+
+    final Icon focusStart = createIcon("focus.png");
+    final Icon focusStop = createIcon("stop.png");
+    final JButton focusButton = createButton(focusStart, new ActionListener() {
       boolean running;
 
       @Override
       public void actionPerformed(ActionEvent e) {
+        final JButton focusButton = (JButton) e.getSource();
         if (running) {
           focusButton.setEnabled(false);
           if (focus.close(5, TimeUnit.SECONDS)) {
-            focusButton.setText("start focus");
+            focusButton.setIcon(focusStart);
             focusButton.setEnabled(true);
             running = false;
           } else {
@@ -150,7 +151,7 @@ public final class Main {
           }
         } else {
           running = true;
-          focusButton.setText("stop focus");
+          focusButton.setIcon(focusStop);
           focus.now(new Runnable() {
             @Override
             public void run() {
@@ -163,10 +164,8 @@ public final class Main {
     });
 
     final JPanel buttonsPane = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 5));
-    buttonsPane.add(moveLeftButton);
-    buttonsPane.add(moveRightButton);
-    buttonsPane.add(moveUpButton);
-    buttonsPane.add(moveDownButton);
+    buttonsPane.add(moveButtonsPane);
+    buttonsPane.add(laserButton);
     buttonsPane.add(focusButton);
     buttonsPane.add(slider);
     buttonsPane.add(valueLabel);
@@ -202,5 +201,27 @@ public final class Main {
       }
     });
     frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+  }
+
+  @Nonnull
+  private static Icon createIcon(@Nonnull final String iconName) {
+    return new ImageIcon(Main.class.getResource(iconName));
+  }
+
+  @Nonnull
+  private static JButton createButton(@Nonnull final String iconName, @Nonnull final ActionListener action) {
+    return createButton(createIcon(iconName), action);
+  }
+
+  @Nonnull
+  private static JButton createButton(@Nonnull final Icon icon, @Nonnull final ActionListener action) {
+    final JButton ret = new JButton(icon);
+    ret.setBorder(BorderFactory.createEmptyBorder());
+    ret.setBorderPainted(false);
+    ret.setOpaque(false);
+    ret.setContentAreaFilled(false);
+    ret.setFocusable(false);
+    ret.addActionListener(action);
+    return ret;
   }
 }
