@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Reto Merz
+ * Copyright (c) 2017-2019 Reto Merz
  */
 package ch.retomerz.mosquito;
 
@@ -8,6 +8,7 @@ import org.bytedeco.javacv.FrameGrabber;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameGrabber;
 
+import javax.annotation.Nonnull;
 import java.awt.image.BufferedImage;
 import java.util.concurrent.TimeUnit;
 
@@ -49,6 +50,7 @@ final class Camera {
     return true;
   }
 
+  @Nonnull
   static Camera open(final int width, final int height, final boolean color) {
     final Camera ret = new Camera(width, height);
     new Thread(new Runnable() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Reto Merz
+ * Copyright (c) 2018-2019 Reto Merz
  */
 package ch.retomerz.mosquito;
 
@@ -47,7 +47,7 @@ public final class Main {
   private static void showFrame() {
 
     final int width = 1920;
-    final int height = 1080;
+    final int height = 1200;
     final Camera camera = Camera.open(width, height, true);
 
     final TfExecutor tfExecutor = TfExecutor.create();
