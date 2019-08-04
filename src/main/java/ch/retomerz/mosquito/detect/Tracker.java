@@ -6,11 +6,13 @@ package ch.retomerz.mosquito.detect;
 import ch.retomerz.mosquito.util.ColorUtil;
 
 import javax.annotation.Nonnull;
+import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class Tracker {
+final class Tracker {
 
   private final int width;
 
@@ -18,11 +20,11 @@ public final class Tracker {
 
   private final List<Area> areas;
 
+  private long skippedFrames;
+
   private long trackInvocationCount;
 
-  private long hitNoiseCount;
-
-  public Tracker(
+  Tracker(
           final int width,
           final int height
   ) {
@@ -31,14 +33,15 @@ public final class Tracker {
     this.areas = new ArrayList<>(128);
   }
 
-  public void track(
+  void track(
           @Nonnull final BufferedImage img,
           @Nonnull final int[] currImage,
-          @Nonnull final int[] lastImage
+          @Nonnull final int[] lastImage,
+          @Nonnull final int[] dirtyImage
   ) {
 
     int pos = 0;
-    int noiseCount = 0;
+    int dirtyCount = 0;
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
 
@@ -55,29 +58,43 @@ public final class Tracker {
         final int noiseB = Math.abs(lastB - currB);
         final int noiseRGB = noiseR + noiseG + noiseB;
 
-        if (y > 1 && noiseRGB > 50) {
-          hitNoiseCount++;
-          trackPixel(x, y);
+        final boolean dirty = y > 1 && noiseRGB > 50;
+        dirtyImage[pos] = dirty ? noiseRGB : 0;
+        if (dirty) {
+          dirtyCount++;
         }
         pos++;
       }
     }
 
-    highlightAreas(img);
+    final double dirtyPercent = (100.0 / (width * height)) * dirtyCount;
+    if (dirtyPercent > 0.1) {
+      skippedFrames++;
+      //System.out.println("Skip ; too many changes ; percent: " + dirtyPercent);
 
-    //img.getGraphics().drawString("Test", 20, 20);
-
-    trackInvocationCount++;
+    } else {
+      pos = 0;
+      for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+          if (dirtyImage[pos] > 0) {
+            trackPixel(x, y);
+          }
+          pos++;
+        }
+      }
+      highlightAreas(img);
+      trackInvocationCount++;
+    }
   }
 
   private void trackPixel(final int x, final int y) {
     for (final Area area : new ArrayList<>(areas)) {
       if (area.isNear(x, y, 15)) {
         area.extend(x, y, trackInvocationCount);
-        // TODO connect area
+        connectArea(area);
         return;
       } else {
-        if (area.getTrackNrOfLastUpdate() < (trackInvocationCount - 4)) {
+        if (area.getTrackNrOfLastUpdate() < (trackInvocationCount - 3)) {
           areas.remove(area);
         }
       }
@@ -85,8 +102,24 @@ public final class Tracker {
     areas.add(new Area(x, y, trackInvocationCount));
   }
 
-  public long getHitNoiseCount() {
-    return hitNoiseCount;
+  private void connectArea(@Nonnull final Area area) {
+    for (final Area otherArea : new ArrayList<>(areas)) {
+      if (otherArea != area) {
+        if (area.isNear(otherArea, 15)) {
+          area.extend(otherArea, trackInvocationCount);
+          areas.remove(otherArea);
+          return;
+        }
+      }
+    }
+  }
+
+  long getAreaCount() {
+    return areas.size();
+  }
+
+  long getSkippedFrames() {
+    return skippedFrames;
   }
 
   private void highlightAreas(@Nonnull final BufferedImage img) {
@@ -94,11 +127,14 @@ public final class Tracker {
       if (area.isPoint()) {
         //highlight(img, area.getMinX(), area.getMinY());
       } else {
-        for (int y = area.getMinY(); y <= area.getMaxY(); y++) {
-          for (int x = area.getMinX(); x <= area.getMaxX(); x++) {
-            img.setRGB(x, y, ColorUtil.toRGB(0, 255, 0));
-          }
-        }
+        final Graphics g = img.getGraphics();
+        g.setColor(Color.red);
+        g.drawRect(
+                area.getMinX(),
+                area.getMinY(),
+                area.getMaxX() - area.getMinX(),
+                area.getMaxY() - area.getMinY()
+        );
       }
     }
   }

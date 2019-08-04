@@ -19,6 +19,8 @@ import java.util.concurrent.TimeUnit;
 
 public final class VideoTracker {
 
+  private static final boolean USE_CONVERTER = Boolean.valueOf(System.getProperty("mosquito.useConverter", "false"));
+
   @Nonnull
   private final FrameGrabber grabber;
 
@@ -36,7 +38,7 @@ public final class VideoTracker {
   private final int[] imageBufB;
 
   @Nonnull
-  private final int[] noise;
+  private final int[] dirtyImage;
 
   @Nonnull
   private final Tracker tracker;
@@ -57,7 +59,7 @@ public final class VideoTracker {
     height = grabber.getImageHeight();
     imageBufA = new int[width * height];
     imageBufB = new int[width * height];
-    noise = new int[width * height];
+    dirtyImage = new int[width * height];
     tracker = new Tracker(width, height);
     startNsec = System.nanoTime();
   }
@@ -66,8 +68,12 @@ public final class VideoTracker {
     return frameNr;
   }
 
-  public long getHitNoiseCount() {
-    return tracker.getHitNoiseCount();
+  public long getAreaCount() {
+    return tracker.getAreaCount();
+  }
+
+  public long getSkippedFrames() {
+    return tracker.getSkippedFrames();
   }
 
   public long getFPS() {
@@ -96,7 +102,7 @@ public final class VideoTracker {
     imageBufBActive = !imageBufBActive;
 
     final BufferedImage img;
-    if (false) {
+    if (USE_CONVERTER) {
       img = converter.getBufferedImage(frame);
       getRGB(img, currImage);
 
@@ -121,7 +127,7 @@ public final class VideoTracker {
     }
 
     if (firstFrameProcessed) {
-      tracker.track(img, currImage, lastImage);
+      tracker.track(img, currImage, lastImage, dirtyImage);
     } else {
       firstFrameProcessed = true;
     }

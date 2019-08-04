@@ -41,17 +41,31 @@ final class Area {
     return trackNrOfLastUpdate;
   }
 
-  public boolean isPoint() {
+  boolean isPoint() {
     return maxX == -1;
   }
 
-  public boolean isNear(final int x, final int y, final double maxDistance) {
+  boolean isNear(final int x, final int y, final double maxDistance) {
     final double distance = distance(x, y);
     return distance < maxDistance;
   }
 
+  boolean isNear(@Nonnull final Area area, final double maxDistance) {
+    final double distance = distance(area);
+    return distance < maxDistance;
+  }
+
   @Nonnull
-  public Area extend(final int x, final int y, final long trackNr) {
+  Area extend(@Nonnull final Area area, final long trackNr) {
+    extend(area.getMinX(), area.getMinY(), trackNr);
+    if (!area.isPoint()) {
+      extend(area.getMaxX(), area.getMaxY(), trackNr);
+    }
+    return this;
+  }
+
+  @Nonnull
+  Area extend(final int x, final int y, final long trackNr) {
     if (x > minX) {
       maxX = x;
     } else {
@@ -78,9 +92,29 @@ final class Area {
   }
 
   private double distance(final int x, final int y) {
-    if (maxX > 0) {
-      return MathUtil.distanceRect(minX, minY, maxX, maxY, x, y);
+    if (isPoint()) {
+      return MathUtil.distance(minX, minY, x, y);
     }
-    return MathUtil.distance(minX, minY, x, y);
+    return MathUtil.distanceRectToPoint(minX, minY, maxX, maxY, x, y);
+  }
+
+  private double distance(@Nonnull final Area area) {
+    if (area.isPoint()) {
+      return distance(area.getMinX(), area.getMinY());
+    }
+    if (isPoint()) {
+      return MathUtil.distanceRectToPoint(
+              area.getMinX(), area.getMinY(),
+              area.getMaxX(), area.getMaxY(),
+              minX,
+              minY
+      );
+    }
+    return MathUtil.distanceRect(
+            minX, minY,
+            maxX, maxY,
+            area.getMinX(), area.getMinY(),
+            area.getMaxX(), area.getMaxY()
+    );
   }
 }
